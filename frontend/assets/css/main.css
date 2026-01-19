@@ -1,0 +1,82 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+
+@import "tailwindcss";
+
+@theme {
+    --font-sans: 'Outfit', sans-serif;
+    /* Deep Blue Theme for "Mean Color" */
+    --color-primary-50: #eff6ff;
+    --color-primary-100: #dbeafe;
+    --color-primary-200: #bfdbfe;
+    --color-primary-300: #93c5fd;
+    --color-primary-400: #60a5fa;
+    --color-primary-500: #3b82f6;
+    /* Standard Blue */
+    --color-primary-600: #2563eb;
+    --color-primary-700: #1d4ed8;
+    --color-primary-800: #1e40af;
+    --color-primary-900: #1e3a8a;
+    --color-primary-950: #172554;
+}
+
+@layer base {
+    body {
+        font-family: 'Outfit', sans-serif;
+        @apply antialiased text-white bg-slate-900;
+        /* Deep Blue Background Gradient */
+        background: radial-gradient(circle at top left, #1e3a8a, #0f172a);
+        min-height: 100vh;
+
+        /* Mobile Safe Areas */
+        padding-top: env(safe-area-inset-top);
+        padding-bottom: env(safe-area-inset-bottom);
+        padding-left: env(safe-area-inset-left);
+        padding-right: env(safe-area-inset-right);
+    }
+
+    /* Prevent iOS Zoom on inputs */
+    input,
+    select,
+    textarea {
+        font-size: 16px !important;
+        touch-action: manipulation;
+    }
+}
+
+@layer utilities {
+    .glass {
+        @apply bg-blue-900/20 backdrop-blur-lg border border-blue-500/20 shadow-xl;
+    }
+
+    .glass-card {
+        @apply bg-blue-900/10 backdrop-blur-xl border border-blue-500/10 shadow-2xl rounded-2xl;
+    }
+
+    .input-glass {
+        @apply bg-blue-950/30 border border-blue-400/30 text-white placeholder-blue-200/50 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all duration-300 backdrop-blur-sm shadow-inner;
+    }
+
+    .btn-primary {
+        /* Orange Buttons as requested */
+        @apply bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-400 hover:to-amber-500 text-white font-bold shadow-lg shadow-orange-500/30 transition-all duration-300 transform hover:-translate-y-0.5 border border-orange-400/20;
+    }
+}
+
+/* Custom Animations */
+@keyframes float {
+    0% {
+        transform: translateY(0px);
+    }
+
+    50% {
+        transform: translateY(-10px);
+    }
+
+    100% {
+        transform: translateY(0px);
+    }
+}
+
+.animate-float {
+    animation: float 6s ease-in-out infinite;
+}
