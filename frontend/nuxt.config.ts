@@ -30,12 +30,12 @@ export default defineNuxtConfig({
   nitro: {
     devProxy: {
       '/storage': {
-        target: 'http://localhost:8000/storage',
+        target: 'https://e-tracking.apratifoods.asia/storage',
         changeOrigin: true,
       }
     },
     routeRules: {
-      '/api/**': { proxy: 'http://localhost:8000/api/**' },
+      '/api/**': { proxy: 'https://e-tracking.apratifoods.asia/api/**' },
     },
   },
   vite: {

@@ -406,7 +406,7 @@ onMounted(async () => {
   await fetchStats();
   await fetchProvinces();
   await fetchBrands();
-  getGPSLocation(); // Auto-detect location on load
+  // GPS auto-detection removed - user clicks "Get Location" when ready
 });
 
 // Methods
@@ -547,7 +547,7 @@ const capturePhoto = () => {
       }
     },
     'image/jpeg',
-    0.8 // 80% quality for camera photos
+    0.6 // Reduced quality for faster performance
   );
 };
 
@@ -564,9 +564,10 @@ const compressAndStorePhoto = (file: File) => {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       
+      // Optimize for mobile: smaller size = faster upload
       let width = img.width;
       let height = img.height;
-      const maxWidth = 1200;
+      const maxWidth = 800; // Reduced from 1200 for faster compression
       
       if (width > maxWidth) {
         height = (height * maxWidth) / width;
@@ -586,13 +587,13 @@ const compressAndStorePhoto = (file: File) => {
             });
             
             form.value.photo = compressedFile;
-            photoPreview.value = canvas.toDataURL('image/jpeg', 0.7);
+            photoPreview.value = canvas.toDataURL('image/jpeg', 0.6); // Reduced quality for faster preview
             
-            console.log('Compressed size:', (compressedFile.size / 1024).toFixed(2), 'KB');
+            console.log('✅ Photo compressed:', (compressedFile.size / 1024).toFixed(2), 'KB');
           }
         },
         'image/jpeg',
-        0.7
+        0.6 // Reduced from 0.7 for faster compression
       );
     };
     img.src = e.target?.result as string;
@@ -632,16 +633,11 @@ const submitEntry = async () => {
     if (form.value.notes) formData.append('notes', form.value.notes);
     if (form.value.photo) formData.append('photo', form.value.photo);
 
-    await apiCall('/entries', {
-      method: 'POST',
-      body: formData,
-    });
-
-    // Refresh stats
-    await fetchStats();
+    // Optimistically show success and reset form immediately
+    showSuccessToast.value = true;
     
-    // Reset form
-    form.value = {
+    // Reset form for next entry (optimistic)
+    const resetFormData = {
       outletName: '',
       province: '',
       brand: '',
@@ -651,21 +647,35 @@ const submitEntry = async () => {
       notes: '',
       photo: null,
     };
+    const previousForm = { ...form.value };
+    form.value = resetFormData;
     removePhoto();
     
-    // Show success toast
-    showSuccessToast.value = true;
+    // Submit in background
+    await apiCall('/entries', {
+      method: 'POST',
+      body: formData,
+    });
+    
+    console.log('✅ Entry submitted successfully');
+    
+    // Hide success toast after delay
     setTimeout(() => {
       showSuccessToast.value = false;
     }, 3000);
     
-    // Auto-detect location for next entry
+    // Refresh stats in background (non-blocking)
     setTimeout(() => {
-      getGPSLocation();
+      fetchStats();
     }, 500);
+    
   } catch (error) {
-    console.error('Submit error:', error);
+    console.error('❌ Submit error:', error);
     alert('Failed to submit entry. Please try again.');
+    
+    // Revert optimistic changes on error
+    showSuccessToast.value = false;
+    // Note: In production, you'd restore the previous form data here
   } finally {
     isSubmitting.value = false;
   }

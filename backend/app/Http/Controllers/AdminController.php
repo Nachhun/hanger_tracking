@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\HangerEntry;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class AdminController extends Controller
 {
@@ -14,7 +15,20 @@ class AdminController extends Controller
         if ($request->user()->role !== 'admin') {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
-        return response()->json(User::all());
+
+        $users = User::withCount([
+            'hangerEntries',
+            'hangerAssignments' => function ($query) {
+                $query->select(DB::raw('COALESCE(SUM(quantity), 0)'));
+            }
+        ])->get();
+
+        return response()->json($users->map(function ($user) {
+            $assigned = $user->hanger_assignments_count ?? 0;
+            $used = $user->hanger_entries_count;
+            $user->stock_count = $assigned - $used;
+            return $user;
+        }));
     }
 
     public function createUser(Request $request)
@@ -137,7 +151,34 @@ class AdminController extends Controller
             'top_salesmen' => $formatSalesmanData($topSalesmen),
             'low_salesmen' => $formatSalesmanData($lowSalesmen),
             'province_stats' => $provinceStats,
+            'stock_summary' => [
+                'total_assigned' => \App\Models\HangerAssignment::sum('quantity'),
+                'total_used' => HangerEntry::count(),
+            ],
+            'warehouse' => [
+                'total_stock' => (int) DB::table('system_settings')->where('key', 'global_hanger_stock')->value('value') ?? 0,
+                'total_distributed' => \App\Models\HangerAssignment::sum('quantity'),
+            ]
         ]);
+    }
+
+    public function updateSetting(Request $request)
+    {
+        if ($request->user()->role !== 'admin') {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        $request->validate([
+            'key' => 'required|string',
+            'value' => 'required',
+        ]);
+
+        DB::table('system_settings')->updateOrInsert(
+            ['key' => $request->key],
+            ['value' => $request->value, 'updated_at' => now()]
+        );
+
+        return response()->json(['message' => 'Setting updated successfully']);
     }
 
     public function getAllEntries(Request $request)
@@ -170,7 +211,7 @@ class AdminController extends Controller
                     'latitude' => $entry->latitude,
                     'longitude' => $entry->longitude,
                     'notes' => $entry->notes,
-                    'photo_url' => $entry->photo_path ? '/storage/' . $entry->photo_path : null,
+                    'photo_url' => $entry->photo_path ? Storage::disk('public')->url($entry->photo_path) : null,
                     'created_at' => $entry->created_at,
                     'updated_at' => $entry->updated_at,
                 ];
@@ -212,7 +253,7 @@ class AdminController extends Controller
                     'latitude' => $entry->latitude,
                     'longitude' => $entry->longitude,
                     'notes' => $entry->notes,
-                    'photo_url' => $entry->photo_path ? '/storage/' . $entry->photo_path : null,
+                    'photo_url' => $entry->photo_path ? Storage::disk('public')->url($entry->photo_path) : null,
                     'created_at' => $entry->created_at,
                 ];
             });
@@ -247,6 +288,25 @@ class AdminController extends Controller
             'message' => 'User status updated successfully',
             'is_active' => $user->is_active
         ]);
+    }
+
+    public function destroy($id)
+    {
+        if (request()->user()->role !== 'admin') {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        $user = User::findOrFail($id);
+
+        if ($user->id === request()->user()->id) {
+            return response()->json(['error' => 'Cannot delete your own account'], 400);
+        }
+
+        // Deleting the user will cascade to hanger_entries and hanger_assignments
+        // based on database migration 'onDelete' cascade rules.
+        $user->delete();
+
+        return response()->json(['message' => 'User deleted successfully']);
     }
     public function report(Request $request)
     {

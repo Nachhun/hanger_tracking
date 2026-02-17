@@ -178,22 +178,23 @@ const loginManual = async (telegramId: string) => {
 };
 
 onMounted(async () => {
-  console.log('Mounting App...');
+  console.log('🚀 App Starting - Telegram Auto-Login Enabled');
   
-  // Check if already authenticated (Fallback if middleware didn't redirect)
+  // Check if already authenticated
   const existingToken = useCookie('auth_token');
   const existingUser = useCookie('user');
   if (existingToken.value && existingUser.value) {
      const user = existingUser.value as any;
-     console.log('Found existing session, directing to:', user.role);
+     console.log('✅ Existing session found');
      router.push(user.role === 'admin' ? '/admin/dashboard' : '/entry');
      return;
   }
 
-  console.log('Window Telegram exists:', !!(window as any).Telegram);
-  console.log('WebApp exists:', !!(window as any).Telegram?.WebApp);
-  console.log('Raw initData:', (window as any).Telegram?.WebApp?.initData);
-  console.log('initDataUnsafe:', (window as any).Telegram?.WebApp?.initDataUnsafe);
+  const tg = (window as any).Telegram?.WebApp;
+  console.log('Telegram WebApp available:', !!tg);
+  if (tg) {
+    console.log('User data:', tg.initDataUnsafe?.user);
+  }
 
   ready();
   expand();
@@ -201,34 +202,52 @@ onMounted(async () => {
   // Check for Dev ID in URL
   const devId = route.query.dev_id as string;
   if (devId) {
-    console.log('Dev ID found, attempting login...');
+    console.log('🔑 Dev ID in URL, logging in...');
     await loginManual(devId);
     loading.value = false;
     return;
   }
 
-  if (!initData.value || !initData.value.includes('hash=')) {
-    // Not in Telegram, or invalid data (e.g. just "query_id")
-    console.warn('Invalid initData:', initData.value);
-    error.value = "Invalid Telegram Data. Please use the Manual Login below.";
-    loading.value = false;
-    return;
+  // ✨ AUTO-DETECT TELEGRAM USER ID
+  if (tg?.initDataUnsafe?.user?.id) {
+    const telegramUserId = tg.initDataUnsafe.user.id.toString();
+    const telegramUser = tg.initDataUnsafe.user;
+    console.log('✅ Telegram User Detected!');
+    console.log(`   ID: ${telegramUserId}`);
+    console.log(`   Name: ${telegramUser.first_name} ${telegramUser.last_name || ''}`);
+    console.log(`   Username: @${telegramUser.username || 'N/A'}`);
+    
+    try {
+      console.log('🔐 Attempting auto-login...');
+      await loginManual(telegramUserId);
+      // Success - loginManual handles redirect
+      return;
+    } catch (err: any) {
+      console.warn('⚠️ Auto-login failed, trying Telegram auth...');
+    }
   }
 
-    // Telegram Auto Login
+  // Try Telegram initData auth if available
+  if (initData.value && initData.value.includes('hash=')) {
+    console.log('🔐 Trying Telegram initData authentication...');
     try {
         const data = await $fetch('/api/auth/telegram', {
             method: 'POST',
             body: { initData: initData.value },
         });
-
         handleLoginSuccess(data);
     } catch (err: any) {
-        console.error('Auto-login failed:', err);
-        // If 403 (e.g. expired or integrity fail), show error + manual login
-        error.value = 'Auto-login failed (likely Bot Token mismatch). Please use Manual Login below.';
+        console.error('❌ Telegram auth failed:', err);
+        error.value = 'Auto-login failed. Please use Manual Login below.';
     } finally {
         loading.value = false;
     }
+    return;
+  }
+
+  // No Telegram data available
+  console.warn('❌ Not opened from Telegram');
+  error.value = "Not opened from Telegram. Please use the Manual Login below.";
+  loading.value = false;
 });
 </script>

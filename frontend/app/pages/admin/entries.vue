@@ -319,20 +319,30 @@ const fetchEntries = async () => {
       return;
     }
     
-    entries.value = data.map((entry: any) => ({
-      id: entry.id,
-      salesman: entry.user?.name || 'Unknown',
-      outletName: entry.outlet_name || 'N/A',
-      province: entry.province || 'N/A',
-      hangerId: entry.hanger_id || 'N/A',
-      latitude: entry.latitude,
-      longitude: entry.longitude,
-      gpsLocation: entry.latitude && entry.longitude ? `${parseFloat(entry.latitude).toFixed(4)}, ${parseFloat(entry.longitude).toFixed(4)}` : null,
-      notes: entry.notes,
-      photoUrl: entry.photo_url,
-      createdAt: entry.created_at,
-      timeAgo: formatTimeAgo(entry.created_at),
-    }));
+    entries.value = data.map((entry: any) => {
+      // Convert full production URLs to relative paths for local development
+      let photoUrl = entry.photo_url;
+      if (photoUrl && photoUrl.includes('e-tracking.apratifoods.asia')) {
+        // Extract the /storage/photos/... part from the full URL
+        photoUrl = photoUrl.replace('https://e-tracking.apratifoods.asia', '');
+      }
+      
+      return {
+        id: entry.id,
+        salesman: entry.user?.name || 'Unknown',
+        outletName: entry.outlet_name || 'N/A',
+        province: entry.province || 'N/A',
+        brand: entry.brand || 'N/A',
+        hangerId: entry.hanger_id || 'N/A',
+        latitude: entry.latitude,
+        longitude: entry.longitude,
+        gpsLocation: entry.latitude && entry.longitude ? `${parseFloat(entry.latitude).toFixed(4)}, ${parseFloat(entry.longitude).toFixed(4)}` : null,
+        notes: entry.notes,
+        photoUrl: photoUrl,
+        createdAt: entry.created_at,
+        timeAgo: formatTimeAgo(entry.created_at),
+      };
+    });
   } catch (error) {
     console.error('Failed to fetch entries:', error);
     entries.value = [];

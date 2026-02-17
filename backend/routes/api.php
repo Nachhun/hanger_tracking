@@ -7,6 +7,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\HangerEntryController;
 use App\Http\Controllers\BrandController;
+use App\Http\Controllers\HangerAssignmentController;
 
 Route::post('/auth/telegram', [AuthController::class, 'telegramAuth']);
 Route::post('/auth/login-by-id', [AuthController::class, 'loginByTelegramId']);
@@ -35,8 +36,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/users/{id}', [AdminController::class, 'show']);
         Route::patch('/users/{id}/toggle-status', [AdminController::class, 'toggleStatus']);
         Route::post('/users', [AdminController::class, 'createUser']);
+        Route::delete('/users/{id}', [AdminController::class, 'destroy']);
         Route::get('/analytics', [AdminController::class, 'analytics']);
         Route::get('/entries', [AdminController::class, 'getAllEntries']);
+
+        Route::post('/settings', [AdminController::class, 'updateSetting']);
 
         Route::get('/report', [AdminController::class, 'report']);
         Route::get('/report/export', [AdminController::class, 'exportReport']);
@@ -51,6 +55,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/brands', [BrandController::class, 'store']);
         Route::put('/brands/{id}', [BrandController::class, 'update']);
         Route::delete('/brands/{id}', [BrandController::class, 'destroy']);
+
+        // Hanger Assignment
+        Route::post('/salesmen/{user}/assign-hangers', [HangerAssignmentController::class, 'store']);
+        Route::post('/salesmen/assign-to-all', [HangerAssignmentController::class, 'storeAll']);
     });
 });
 

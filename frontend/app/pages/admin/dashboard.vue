@@ -33,6 +33,31 @@
       
       <!-- Hero Stats Grid -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+        <!-- Card: Warehouse Stock (New) -->
+        <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200 relative overflow-hidden group hover:border-slate-300 transition-colors">
+            <div class="absolute right-0 top-0 h-24 w-24 bg-indigo-50 rounded-bl-full -mr-4 -mt-4"></div>
+            <div class="relative">
+                <div class="flex justify-between items-start">
+                    <p class="text-slate-500 text-sm font-medium uppercase tracking-wider">Warehouse Stock</p>
+                    <button @click="openStockModal" class="text-slate-400 hover:text-indigo-600 transition-colors" title="Edit Total Stock">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                    </button>
+                </div>
+                <div class="flex items-baseline gap-2 mt-2">
+                    <h3 class="text-3xl font-bold text-slate-900">{{ warehouseStats.total_stock - warehouseStats.total_distributed }}</h3>
+                    <span class="text-xs text-slate-500 font-medium">/ {{ warehouseStats.total_stock }}</span>
+                </div>
+            </div>
+             <div class="mt-4 flex items-center justify-between text-xs">
+                 <span class="font-medium text-slate-500"> Distributed: <b class="text-slate-800">{{ warehouseStats.total_distributed }}</b></span>
+                 <div class="flex items-center text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-100">
+                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                    <span>In Stock</span>
+                </div>
+            </div>
+        </div>
+
         <!-- Card 1: Today's Hangers -->
         <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200 relative overflow-hidden group hover:border-slate-300 transition-colors">
             <div class="absolute right-0 top-0 h-24 w-24 bg-blue-50 rounded-bl-full -mr-4 -mt-4"></div>
@@ -91,6 +116,21 @@
             <div class="mt-4 flex items-center text-xs font-semibold text-amber-700 bg-amber-50 w-fit px-2.5 py-1 rounded-md border border-amber-100">
                 <svg class="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path></svg>
                 <span>Leading</span>
+            </div>
+        </div>
+
+        <!-- Card: Remaining Stock -->
+        <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200 relative overflow-hidden group hover:border-slate-300 transition-colors">
+            <div class="absolute right-0 top-0 h-24 w-24 bg-cyan-50 rounded-bl-full -mr-4 -mt-4"></div>
+            <div class="relative">
+                <p class="text-slate-500 text-sm font-medium uppercase tracking-wider">Remaining Stock</p>
+                <div class="flex items-baseline gap-2 mt-2">
+                    <h3 class="text-3xl font-bold text-slate-900">{{ stockSummary?.balance || 0 }}</h3>
+                </div>
+            </div>
+            <div class="mt-4 flex items-center justify-between text-xs">
+                 <span class="font-medium text-slate-500"> Assigned: <b class="text-slate-800">{{ stockSummary?.total_assigned || 0 }}</b></span>
+                 <span class="font-medium text-slate-500"> Used: <b class="text-slate-800">{{ stockSummary?.total_used || 0 }}</b></span>
             </div>
         </div>
       </div>
@@ -211,6 +251,12 @@
                          </div>
                          <span class="text-sm font-semibold text-slate-700 group-hover:text-slate-900">Reports</span>
                      </button>
+                      <button @click="openAssignModal" class="flex flex-col items-center justify-center p-6 bg-white rounded-xl border border-slate-200 shadow-sm hover:border-emerald-300 hover:shadow-md transition-all group">
+                          <div class="h-10 w-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center mb-3">
+                              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg>
+                          </div>
+                          <span class="text-sm font-semibold text-slate-700 group-hover:text-slate-900">Give Hangers</span>
+                      </button>
                  </div>
             </div>
 
@@ -292,6 +338,110 @@
       </div>
 
     </main>
+
+    <!-- Assign Hangers Modal -->
+    <div v-if="showAssignModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+      <div class="bg-white rounded-xl shadow-xl max-w-md w-full p-6 space-y-4">
+        <h3 class="text-lg font-bold text-gray-900">Give Hangers</h3>
+        
+        <form @submit.prevent="submitAssignment" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Select Salesman</label>
+            <select 
+              v-model="assignForm.user_id" 
+              required
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white"
+            >
+              <option value="" disabled>Select a user...</option>
+              <option value="all" class="font-bold text-emerald-700">📣 All Active Salesmen</option>
+              <option disabled>──────────────</option>
+              <option v-for="user in salesmenList" :key="user.id" :value="user.id">
+                {{ user.name }}
+              </option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
+            <input 
+              v-model="assignForm.quantity" 
+              type="number" 
+              min="1" 
+              required
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            >
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Note (Optional)</label>
+            <textarea 
+              v-model="assignForm.note" 
+              rows="2"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+              placeholder="e.g. Restock for campaign"
+            ></textarea>
+          </div>
+
+          <div class="flex justify-end gap-3 pt-2">
+             <button 
+              type="button" 
+              @click="closeAssignModal"
+              class="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+            >
+              Cancel
+            </button>
+            <button 
+              type="submit" 
+              :disabled="isAssigning"
+              class="px-4 py-2 text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 disabled:opacity-50 flex items-center"
+            >
+              <span v-if="isAssigning" class="mr-2">
+                <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              </span>
+              Confirm Details
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Edit Warehouse Stock Modal -->
+    <div v-if="showStockModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+      <div class="bg-white rounded-xl shadow-xl max-w-sm w-full p-6 space-y-4">
+        <h3 class="text-lg font-bold text-gray-900">Update Warehouse Stock</h3>
+        <p class="text-sm text-gray-500">Set the total initial number of hangers in your warehouse.</p>
+        
+        <form @submit.prevent="submitStockUpdate" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Total Stock</label>
+            <input 
+              v-model="stockForm.value" 
+              type="number" 
+              required
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            >
+          </div>
+
+          <div class="flex justify-end gap-3 pt-2">
+             <button 
+              type="button" 
+              @click="closeStockModal"
+              class="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+            >
+              Cancel
+            </button>
+            <button 
+              type="submit" 
+              :disabled="isUpdatingStock"
+              class="px-4 py-2 text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+            >
+              {{ isUpdatingStock ? 'Saving...' : 'Save' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -318,6 +468,20 @@ const stats = ref({
   weeklyEntries: 0,
   topPerformer: 'Loading...',
 });
+
+const stockSummary = ref({
+  total_assigned: 0,
+  total_used: 0,
+  balance: 0
+
+});
+
+const warehouseStats = ref({
+    total_stock: 0,
+    total_distributed: 0
+});
+
+// Chart data (last 7 days)
 
 // Chart data (last 7 days)
 const chartData = ref([
@@ -451,7 +615,25 @@ const fetchAnalytics = async () => {
     // Update province stats
     provinceStats.value = data.province_stats || [];
 
+    // Update stock summary
+    if (data.stock_summary) {
+        stockSummary.value = {
+            total_assigned: parseInt(data.stock_summary.total_assigned) || 0,
+            total_used: parseInt(data.stock_summary.total_used) || 0,
+            balance: (parseInt(data.stock_summary.total_assigned) || 0) - (parseInt(data.stock_summary.total_used) || 0)
+        };
+    }
+
+    // Update warehouse stats
+    if (data.warehouse) {
+        warehouseStats.value = {
+            total_stock: parseInt(data.warehouse.total_stock) || 0,
+            total_distributed: parseInt(data.warehouse.total_distributed) || 0
+        };
+    }
+
     // Update chart data
+
     chartData.value = data.daily_chart.map((day: any) => ({
       label: new Date(day.date).toLocaleDateString('en-US', { weekday: 'short' }),
       value: day.count,
@@ -479,6 +661,111 @@ const fetchAnalytics = async () => {
     // Silent fail or simple console log to preserve UI aesthetics
   }
 };
+
+// Hanger Assignment Logic
+const showAssignModal = ref(false);
+const isAssigning = ref(false);
+const salesmenList = ref<any[]>([]);
+const assignForm = ref({
+  user_id: '',
+  quantity: 50,
+  note: ''
+});
+
+const openAssignModal = async () => {
+  showAssignModal.value = true;
+  assignForm.value = { user_id: '', quantity: 50, note: '' };
+  
+  if (salesmenList.value.length === 0) {
+    try {
+      const users = await apiCall('/admin/users') as any[];
+      salesmenList.value = users.filter((u: any) => u.role === 'salesman' && u.is_active);
+    } catch (e) {
+      console.error('Failed to load salesmen', e);
+    }
+  }
+};
+
+const closeAssignModal = () => {
+    showAssignModal.value = false;
+};
+
+const submitAssignment = async () => {
+  if (!assignForm.value.user_id) {
+      alert('Please select a salesman or "All Salesmen"');
+      return;
+  }
+  
+  isAssigning.value = true;
+  try {
+    if (assignForm.value.user_id === 'all') {
+        const result = await apiCall('/admin/salesmen/assign-to-all', {
+            method: 'POST',
+            body: {
+                quantity: assignForm.value.quantity,
+                note: assignForm.value.note
+            }
+        }) as any;
+        alert(`Successfully assigned hangers to ${result.count} salesmen!`);
+    } else {
+        await apiCall(`/admin/salesmen/${assignForm.value.user_id}/assign-hangers`, {
+          method: 'POST',
+          body: {
+            quantity: assignForm.value.quantity,
+            note: assignForm.value.note
+          }
+        });
+        alert('Hangers assigned successfully!');
+    }
+    closeAssignModal();
+    fetchAnalytics(); // Refresh stats
+  } catch (err) {
+    console.error('Failed to assign hangers', err);
+    alert('Failed to assign hangers.');
+  } finally {
+    isAssigning.value = false;
+  }
+
+};
+
+
+// Stock Update Logic
+const showStockModal = ref(false);
+const isUpdatingStock = ref(false);
+const stockForm = ref({ value: 0 });
+
+const openStockModal = () => {
+    stockForm.value.value = warehouseStats.value.total_stock;
+    showStockModal.value = true;
+};
+
+const closeStockModal = () => {
+    showStockModal.value = false;
+};
+
+const submitStockUpdate = async () => {
+    isUpdatingStock.value = true;
+    try {
+        await apiCall('/admin/settings', {
+            method: 'POST',
+            body: {
+                key: 'global_hanger_stock',
+                value: stockForm.value.value
+            }
+        });
+        
+        // Refresh data
+        await fetchAnalytics();
+        closeStockModal();
+    } catch (e) {
+        console.error('Failed to update stock', e);
+        alert('Failed to update stock');
+    } finally {
+        isUpdatingStock.value = false;
+    }
+};
+
+
 
 // Fetch analytics on mount
 onMounted(async () => {

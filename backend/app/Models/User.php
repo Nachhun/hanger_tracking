@@ -56,4 +56,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(HangerEntry::class);
     }
+
+    public function hangerAssignments()
+    {
+        return $this->hasMany(HangerAssignment::class, 'user_id');
+    }
 }
